@@ -241,7 +241,7 @@ class dahbug
         if (strpos($key, '/')) {
             $keyArr = explode('/', $key);
             foreach ($keyArr as $i => $k) {
-                if ($k==='') {
+                if ($k === '') {
 
                     return $default;
                 }
@@ -1029,23 +1029,27 @@ class dahbug
      *
      * @param string $query
      * @param array  $binds
-     * @param string $encoding
+     * @param string $prefix
      * @static
      * @access public
      * @return string
      */
-    static public function writeSql($query, $binds = array(), $encoding = null) {
+    static public function writeSql($query, $binds = array(), $prefix = ':')
+    {
         $keys = array();
 
-        foreach ($binds as $key => $value) {
+        foreach ($binds as $key => &$value) {
             if (is_string($key)) {
-                $keys[] = "/:{$key}/";
+                $key = ltrim($key, $prefix);
+                $keys[] = "/({$prefix}{$key})([\W\s])/";
             } else {
                 $keys[] = '/[?]/';
             }
+
+            $value = "\"{$value}\"$2";
         }
 
-        $query = preg_replace($keys, $binds, $query, 1, $count);
+        $query = preg_replace($keys, $binds, $query, -1, $count);
 
         return self::write($query);
     }
@@ -1069,7 +1073,7 @@ class dahbug
         $outEnc             = self::getData('output_encoding');
 
         if (is_object($var)) {
-             if (method_exists($var, '__toString')) {
+            if (method_exists($var, '__toString')) {
                 $var = $var->__toString();
             } else {
                 $class = get_class($var);
@@ -1312,7 +1316,8 @@ class dahbug
     {
         $time = microtime(true) - $this->_requestTime;
         $string = DAHBUG_EOL;
-        $string .= sprintf('Request processing time: %s   Memory Usage: %d Mb',
+        $string .= sprintf(
+            'Request processing time: %s   Memory Usage: %d Mb',
             self::_formatTime($time),
             memory_get_peak_usage(true) / (1024 * 1024)
         );
